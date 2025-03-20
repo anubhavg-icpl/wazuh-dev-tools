@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  wazuh-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Use the current user's UID and GID to avoid permission issues
+        - USER_UID=${HOST_UID:-1000}
+        - USER_GID=${HOST_GID:-1000}
+    volumes:
+      # Mount source code either from a specific location or the current directory
+      - ${WAZUH_SOURCE_DIR:-./wazuh-source}:/wazuh-source
+      # Mount SSH keys for Git operations
+      - ${SSH_KEY_DIR:-~/.ssh}:/home/wazuh/.ssh:ro
+      # Mount Git config
+      - ${GIT_CONFIG:-~/.gitconfig}:/home/wazuh/.gitconfig:ro
+      # Mount custom tools if present
+      - ${CUSTOM_TOOLS_DIR:-./tools}:/home/wazuh/tools:ro
+    # Keep the container running
+    tty: true
+    stdin_open: true
+    environment:
+      - TERM=xterm-256color
+    # Add capability to use debugging tools
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    # Network settings - connect to host network if needed
+    network_mode: ${NETWORK_MODE:-bridge}
